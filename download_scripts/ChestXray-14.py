@@ -1,6 +1,10 @@
-from utils import download_file
+import os
+
 from tqdm import tqdm
 import wget
+
+from utils import download_file
+from verify import verify_gz_file
 
 # URLs for the zip files
 links = [
@@ -18,8 +22,17 @@ links = [
     'https://nihcc.box.com/shared/static/ioqwiy20ihqwyr8pf4c24eazhh281pbu.gz'
 ]
 
-for url in tqdm(links, colour='blue'):
-    try:
-        download_file(url, save_dir='./storage/ChestXray-14', progress_kwargs={'leave': False})
-    except InterruptedError:
-        pass
+save_dir = './storage/ChestXray-14'
+
+for url in links:
+    filename = wget.filename_from_url(url)
+    filepath = os.path.join(save_dir, filename)
+    assert os.path.exists(filepath), f'{filepath} not exist'
+    ok = verify_gz_file(filepath)
+    print(filename, ok)
+
+# for url in tqdm(links, colour='blue'):
+#     try:
+#         download_file(url, save_dir='./storage/ChestXray-14', progress_kwargs={'leave': False})
+#     except InterruptedError:
+#         pass

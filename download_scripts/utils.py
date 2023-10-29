@@ -1,11 +1,25 @@
 from urllib.parse import urlparse
 import os
+import sys
 from tqdm import tqdm
 
 import wget
 import requests
 import fake_useragent
-from colorama import Fore, Style
+from loguru import logger
+
+logger.remove(handler_id=None)
+logger.add(
+    level='INFO',
+    rotation='00:00',
+    retention='14 days',
+    compression='zip',
+    encoding='utf-8',
+    enqueue=True,
+    format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}"
+)
+
+
 
 _tqdm_progress_instance = None
 _fake_useragent = fake_useragent.UserAgent(browsers=['chrome'])
@@ -18,12 +32,11 @@ _default_progress_kwargs = {
 }
 
 _default_proxies = {  
-    'http': 'http://0.0.0.0:7890',  
-    'https': 'http://0.0.0.0:7890',  
+    'http': 'http://localhost:7890',  
+    'https': 'http://localhost:7890',  
 }
 
 _file_size_cache = {}
-
 
 def _make_tqdm_progress(total: float, display_progress: bool, progress_kwargs: dict):
     if not display_progress:
@@ -46,16 +59,21 @@ def _close_tqdm_progress(display_progress: bool):
         _tqdm_progress_instance.close()
 
 
-def color_report(string, color):
-    pass
-
 def get_actual_filesize_from_url(url):
     if url in _file_size_cache:
         return _file_size_cache[url]
-    response = make_download_response(url, False, 0)
+    # 先使用 head， 如果没有结果用流式 GET
+    response = requests.head(url)
     filesize = get_filesize_from_response(response)
+    if filesize == 0:
+        logger.info('HEAD is not available in {}, attempt to use stream GET instead'.format(url))
+        response = make_download_response(url, False, 0)
+        filesize = get_filesize_from_response(response)
+
     if filesize > 0:
+        logger.info('size of {} is {}'.format(url, filesize))
         _file_size_cache[url] = filesize
+
     return filesize
 
 def make_download_response(url: str, resume: bool, already_download_bytes: int) -> requests.Response:
@@ -134,7 +152,7 @@ def download_file(url: str, save_name: str = None, save_dir: str = None, resume:
         _update_tqdm_progress(len(chunk), display_progress)
     
     _close_tqdm_progress(display_progress)
-
+    logger.info('download file saved to ' + save_path)
     return already_download_bytes
 
 
