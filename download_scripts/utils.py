@@ -156,6 +156,11 @@ def download_file(url: str, save_name: str = None, save_dir: str = None, resume:
     return already_download_bytes
 
 
+# TODO: do google driver download
+
+
+# TODO: do FTP download
+
 if __name__ == '__main__':
     url = 'https://kirigaya.cn/files/pdfs/endnote的基本用法.pdf'
     try:
